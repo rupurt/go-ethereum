@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/smartcontractkit/logger"
 	"io"
 	"reflect"
 	"strings"
@@ -237,6 +238,17 @@ func parseMessage(raw json.RawMessage) ([]*jsonrpcMessage, bool) {
 	if !isBatch(raw) {
 		msgs := []*jsonrpcMessage{{}}
 		json.Unmarshal(raw, &msgs[0])
+		labels := []interface{}{
+			"version", msgs[0].Version,
+			// "id", msgs[0].ID,
+			"method", msgs[0].Method,
+			// "params", msgs[0].Params,
+			// "result", msgs[0].Result,
+		}
+		if msgs[0].Error != nil {
+			labels = append(labels, "error", msgs[0].Error.Error())
+		}
+		logger.Infow("received JSON-RPC message: ", labels...)
 		return msgs, false
 	}
 	dec := json.NewDecoder(bytes.NewReader(raw))
@@ -245,6 +257,19 @@ func parseMessage(raw json.RawMessage) ([]*jsonrpcMessage, bool) {
 	for dec.More() {
 		msgs = append(msgs, new(jsonrpcMessage))
 		dec.Decode(&msgs[len(msgs)-1])
+	}
+	for _, m := range msgs {
+		labels := []interface{}{
+			"version", m.Version,
+			// "id", m.ID,
+			"method", m.Method,
+			// "params", m.Params,
+			// "result", m.Result,
+		}
+		if m.Error != nil {
+			labels = append(labels, "error", m.Error.Error())
+		}
+		logger.Infow("received JSON-RPC message: ", labels...)
 	}
 	return msgs, true
 }
