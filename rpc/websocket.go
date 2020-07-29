@@ -29,6 +29,7 @@ import (
 	mapset "github.com/deckarep/golang-set"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/gorilla/websocket"
+	"github.com/smartcontractkit/logger"
 )
 
 const (
@@ -125,10 +126,13 @@ func DialWebsocketWithDialer(ctx context.Context, endpoint, origin string, diale
 		return nil, err
 	}
 	return newClient(ctx, func(ctx context.Context) (ServerCodec, error) {
+		logger.Warn("websocket reconnect function called")
 		conn, resp, err := dialer.DialContext(ctx, endpoint, header)
 		if err != nil {
+			logger.Warnw("websocket reconnect redial error: %w", err)
 			hErr := wsHandshakeError{err: err}
 			if resp != nil {
+				logger.Warnw("websocket reconnect redial response status: %s", resp.Status)
 				hErr.status = resp.Status
 			}
 			return nil, hErr
